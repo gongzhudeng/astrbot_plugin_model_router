@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    width: 1500px;
+    color: #f5f7fb;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background:
+      radial-gradient(circle at 15% 50%, rgba(20, 255, 140, 0.08), transparent 30%),
+      radial-gradient(circle at 85% 30%, rgba(255, 77, 94, 0.08), transparent 30%),
+      radial-gradient(circle at 50% 80%, rgba(26, 177, 255, 0.08), transparent 30%),
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      #0a0b0c;
+    background-size: 100% 100%, 100% 100%, 100% 100%, 38px 38px, 38px 38px;
+  }
+
+  .page { padding: 48px; }
+
+  .topline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 30px;
+  }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #9499a3;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .pulse-icon {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    color: #000;
+    background: linear-gradient(135deg, #fff, #e0e5ec);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
+    font-size: 16px;
+  }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin: 14px 0 0;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 52px;
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #ffffff, #a0a5b0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .glass-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 17px;
+    border-radius: 999px;
+    border: 1px solid rgba(176, 196, 222, 0.35);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.05) 55%, rgba(0, 0, 0, 0.04)),
+      rgba(30, 41, 59, 0.20);
+    backdrop-filter: blur(26px) saturate(170%);
+    -webkit-backdrop-filter: blur(26px) saturate(170%);
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.24), inset 0 1px 1px rgba(255, 255, 255, 0.30);
+    color: #e2e8f0;
+    font-size: 15px;
+    font-weight: 800;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 26px;
+    padding-top: 26px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 8px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    color: #d9dde5;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .pill .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  .pill.ok { color: #18e78d; background: linear-gradient(135deg, rgba(11, 159, 93, 0.2), rgba(11, 159, 93, 0.05)); border-color: rgba(24, 231, 141, 0.3); box-shadow: 0 0 15px rgba(24, 231, 141, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1); }
+  .pill.slow { color: #ffb11a; background: linear-gradient(135deg, rgba(255, 177, 26, 0.2), rgba(255, 177, 26, 0.05)); border-color: rgba(255, 177, 26, 0.3); box-shadow: 0 0 15px rgba(255, 177, 26, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1); }
+  .pill.error { color: #ff4d5e; background: linear-gradient(135deg, rgba(255, 77, 94, 0.2), rgba(255, 77, 94, 0.05)); border-color: rgba(255, 77, 94, 0.3); box-shadow: 0 0 15px rgba(255, 77, 94, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1); }
+  .pill.skipped { color: #8b9099; background: linear-gradient(135deg, rgba(139, 144, 153, 0.16), rgba(139, 144, 153, 0.04)); border-color: rgba(139, 144, 153, 0.3); }
+
+  .card {
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 23px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.062) 0%, rgba(255, 255, 255, 0.014) 100%);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    padding: 14px 18px 18px;
+  }
+
+  .card::before {
+    content: "";
+    display: block;
+    height: 1px;
+    margin: 0 8px 8px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  }
+
+  .model-row {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 420px) 132px 150px 150px 132px minmax(240px, 1fr);
+    align-items: center;
+    gap: 16px;
+    min-height: 74px;
+    padding: 14px 18px 14px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.065);
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.042) 0%, rgba(255, 255, 255, 0.012) 100%);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.045);
+  }
+
+  .model-row + .model-row { margin-top: 10px; }
+
+  .rail {
+    justify-self: center;
+    width: 6px;
+    height: 42px;
+    border-radius: 999px;
+    background: #3a3f4a;
+  }
+
+  .rail.ok { background: #18e78d; box-shadow: 0 0 12px rgba(24, 231, 141, 0.55); }
+  .rail.slow { background: #ffb11a; box-shadow: 0 0 12px rgba(255, 177, 26, 0.55); }
+  .rail.error { background: #ff4d5e; box-shadow: 0 0 12px rgba(255, 77, 94, 0.55); }
+
+  .model-cell { min-width: 0; }
+
+  .model-cell .idx {
+    display: inline-block;
+    margin-right: 10px;
+    color: #566072;
+    font-size: 15px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .model-cell .name {
+    color: #f5f7fb;
+    font-size: 19px;
+    font-weight: 850;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+    max-width: 360px;
+    display: inline-block;
+  }
+
+  .model-cell .pid {
+    margin: 5px 0 0 2px;
+    color: #8b9099;
+    font-size: 12px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .metric { min-width: 0; }
+
+  .metric .k {
+    color: #7d828c;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+  }
+
+  .metric .v {
+    color: #eef1f6;
+    font-size: 17px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .stripe { display: flex; gap: 4px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+
+  .stripe span {
+    width: 12px;
+    height: 26px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+
+  .err {
+    margin: 8px 4px 0 28px;
+    color: #ff8b96;
+    font-size: 13px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .foot {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 26px;
+  }
+
+  .foot-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.012) 100%);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  }
+
+  .foot-card .k { color: #7d828c; font-size: 13px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+
+  .foot-card .v {
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 800;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .switch-line {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #a7abb2;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .switch-line .dot { width: 8px; height: 8px; border-radius: 50%; background: #18e78d; box-shadow: 0 0 8px #18e78d; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topline">
+    <div>
+      <div class="eyebrow"><span class="pulse-icon">⚡</span>MODEL ROUTER</div>
+      <div class="title-row">
+        <h1>模型路由</h1>
+        <span class="glass-pill"><span style="color:#18e78d;">●</span>2026-09-27 18:25:00</span>
+      </div>
+    </div>
+    <div class="summary">
+      <span class="pill ok"><span class="dot"></span>1 合格</span>
+      <span class="pill slow"><span class="dot"></span>1 超线</span>
+      <span class="pill error"><span class="dot"></span>1 失败</span>
+      <span class="pill skipped"><span class="dot"></span>1 未测</span>
+    </div>
+  </div>
+
+  <div class="card">
+    
+    <div class="model-row">
+      <div class="rail ok"></div>
+      <div class="model-cell">
+        <span class="idx">01</span><span class="name" title="doubao_official/ep-2026">豆包官方(ep-2026...dfdx4)</span>
+        <div class="pid">doubao_official/ep-2026</div>
+      </div>
+      <div class="metric"><div class="k">状态</div><div class="v" style="color: #18e78d;">合格</div></div>
+      <div class="metric"><div class="k">本轮延迟</div><div class="v">6.8s</div></div>
+      <div class="metric"><div class="k">7天可用</div><div class="v">100%</div></div>
+      <div class="metric"><div class="k">均延迟</div><div class="v">6.8s</div></div>
+      <div class="stripe">
+        <span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span>
+      </div>
+    </div>
+    
+    
+    <div class="model-row">
+      <div class="rail slow"></div>
+      <div class="model-cell">
+        <span class="idx">02</span><span class="name" title="lucen_main/doubao-seed">lucen-国产主流(doubao-seed-2.0-pro)</span>
+        <div class="pid">lucen_main/doubao-seed</div>
+      </div>
+      <div class="metric"><div class="k">状态</div><div class="v" style="color: #ffb11a;">超线</div></div>
+      <div class="metric"><div class="k">本轮延迟</div><div class="v">35.2s</div></div>
+      <div class="metric"><div class="k">7天可用</div><div class="v">80%</div></div>
+      <div class="metric"><div class="k">均延迟</div><div class="v">31.0s</div></div>
+      <div class="stripe">
+        <span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: slow;"></span><span style="background: slow;"></span><span style="background: slow;"></span><span style="background: slow;"></span><span style="background: slow;"></span><span style="background: slow;"></span><span style="background: slow;"></span><span style="background: slow;"></span>
+      </div>
+    </div>
+    
+    
+    <div class="model-row">
+      <div class="rail error"></div>
+      <div class="model-cell">
+        <span class="idx">03</span><span class="name" title="lucen_dp/flash">lucen-dp官方0.5(deepseek-v4-flash)</span>
+        <div class="pid">lucen_dp/flash</div>
+      </div>
+      <div class="metric"><div class="k">状态</div><div class="v" style="color: #ff4d5e;">失败</div></div>
+      <div class="metric"><div class="k">本轮延迟</div><div class="v">50.1s</div></div>
+      <div class="metric"><div class="k">7天可用</div><div class="v">40%</div></div>
+      <div class="metric"><div class="k">均延迟</div><div class="v">52.0s</div></div>
+      <div class="stripe">
+        <span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: ok;"></span><span style="background: error;"></span><span style="background: error;"></span><span style="background: error;"></span><span style="background: error;"></span><span style="background: error;"></span><span style="background: error;"></span><span style="background: error;"></span><span style="background: error;"></span><span style="background: error;"></span><span style="background: error;"></span><span style="background: error;"></span><span style="background: error;"></span><span style="background: error;"></span><span style="background: error;"></span>
+      </div>
+    </div>
+    
+    <div class="err">⚠ HTTP 502: bad gateway</div>
+    
+    
+    <div class="model-row">
+      <div class="rail skipped"></div>
+      <div class="model-cell">
+        <span class="idx">04</span><span class="name" title="lucen_dp/pro">lucen-dp官方0.5(deepseek-v4-pro)</span>
+        <div class="pid">lucen_dp/pro</div>
+      </div>
+      <div class="metric"><div class="k">状态</div><div class="v" style="color: #3a3f4a;">未测</div></div>
+      <div class="metric"><div class="k">本轮延迟</div><div class="v">—</div></div>
+      <div class="metric"><div class="k">7天可用</div><div class="v">积累中</div></div>
+      <div class="metric"><div class="k">均延迟</div><div class="v">—</div></div>
+      <div class="stripe">
+        <span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span><span style="background: skipped;"></span>
+      </div>
+    </div>
+    
+    
+  </div>
+
+  <div class="foot">
+    <div class="foot-card"><span class="k">当前会话模型</span><span class="v">豆包官方(ep-2026...dfdx4)</span></div>
+    <div class="foot-card"><span class="k">路由建议</span><span class="v">豆包官方(ep-2026...dfdx4)</span></div>
+    <div class="foot-card"><span class="k">免检测时段</span><span class="v">01:26 - 08:00</span></div>
+    <div class="foot-card"><span class="k">下次自动检测</span><span class="v">19:25</span></div>
+  </div>
+
+  
+  <div class="switch-line"><span class="dot"></span>保持 豆包官方(ep-2026...dfdx4)</div>
+  
+</div>
+</body>
+</html>

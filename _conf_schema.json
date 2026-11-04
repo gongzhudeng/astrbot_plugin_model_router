@@ -1,0 +1,192 @@
+{
+  "enabled": {
+    "description": "启用自动路由",
+    "hint": "总开关。关闭后定时检测与自动切换全部停止,手动命令不受影响。",
+    "type": "bool",
+    "default": true
+  },
+  "provider_priority": {
+    "description": "模型优先级链",
+    "hint": "从上到下即为探查顺序,排得越靠前优先级越高。检测时从第一个开始接力:合格(在合格线内返回)立即采用并停止;全都超过合格线时选返回最快的;全都失败则不动。可用上下按钮调整顺序。",
+    "type": "list",
+    "items": {
+      "type": "string"
+    },
+    "_special": "select_providers",
+    "default": []
+  },
+  "target_umo": {
+    "description": "被管理的会话",
+    "hint": "自动切换作用于这个会话的当前对话模型。通常不用手填:在目标会话里发送 /模型路由 绑定 即可自动写入。",
+    "type": "string",
+    "default": ""
+  },
+  "eligible_timeout_seconds": {
+    "description": "合格线(秒)",
+    "hint": "模型在这个时间内成功返回即为合格。超过合格线的模型不再被视为合格,但仍继续观察到放弃线,参与\"最快返回\"评选。默认 30 秒。",
+    "type": "int",
+    "slider": {
+      "min": 5,
+      "max": 180,
+      "step": 5
+    },
+    "default": 30
+  },
+  "probe_deadline_seconds": {
+    "description": "放弃线(秒)",
+    "hint": "单个模型从发起请求算起最多观察这么久,到点仍无结果则判为失败并取消。默认 50 秒,需大于合格线。",
+    "type": "int",
+    "slider": {
+      "min": 10,
+      "max": 600,
+      "step": 5
+    },
+    "default": 50
+  },
+  "probe_prompt": {
+    "description": "探测提示词",
+    "hint": "发给每个模型的用户消息,越短越省 token。",
+    "type": "string",
+    "default": "请只回复 OK,不要任何其他内容。"
+  },
+  "interval_hours": {
+    "description": "自动检测间隔(小时)",
+    "hint": "每隔多久自动检测一轮,默认 1 小时;0 表示关闭自动检测。",
+    "type": "float",
+    "slider": {
+      "min": 0,
+      "max": 24,
+      "step": 0.5
+    },
+    "default": 1.0
+  },
+  "jitter_minutes": {
+    "description": "随机抖动(分钟)",
+    "hint": "每轮检测额外随机等待 0~N 分钟,避免整点齐刷。0 表示不抖动。",
+    "type": "int",
+    "slider": {
+      "min": 0,
+      "max": 30,
+      "step": 1
+    },
+    "default": 0
+  },
+  "quiet_enabled": {
+    "description": "启用免检测时段",
+    "hint": "时段内暂停定时检测与自动切换(手动命令不受限),时段结束的那一刻立即补测一轮。适合睡觉时间。",
+    "type": "bool",
+    "default": false
+  },
+  "quiet_start": {
+    "description": "免检测开始时间",
+    "hint": "格式 HH:MM,例如 01:26。支持跨午夜(开始大于结束,如 23:00 到 07:00)。",
+    "type": "string",
+    "default": "01:26"
+  },
+  "quiet_end": {
+    "description": "免检测结束时间",
+    "hint": "格式 HH:MM,例如 07:00。结束时会立即触发一轮检测。",
+    "type": "string",
+    "default": "07:00"
+  },
+  "force_align": {
+    "description": "检测后强制归位",
+    "hint": "开启后每轮检测都会把会话模型归位到本轮最优选择(包含从低优先级升回高优先级),手动切换只在两轮检测之间有效。关闭后仅在当前模型本轮被判定失败时才切换。",
+    "type": "bool",
+    "default": true
+  },
+  "notify_mode": {
+    "description": "切换通知模式",
+    "hint": "off=全部静默只写日志;fail_only=仅在当前模型失败/报错而切换时通知;all=任何切换都通知。发送到被管理的会话。",
+    "type": "string",
+    "options": [
+      "off",
+      "fail_only",
+      "all"
+    ],
+    "default": "fail_only"
+  },
+  "auto_skip_consecutive": {
+    "description": "连续失败自动跳过(轮)",
+    "hint": "某模型连续失败达到该轮数后,日常检测自动跳过它(不删配置),每 24 小时仍会轻量复测一次以判断是否恢复。0 表示关闭,只提醒不跳过。",
+    "type": "int",
+    "slider": {
+      "min": 0,
+      "max": 168,
+      "step": 1
+    },
+    "default": 0
+  },
+  "fail_notice_consecutive": {
+    "description": "长期不可用提醒阈值(轮)",
+    "hint": "某模型连续失败达到该轮数时通知一次,之后每再累积同样轮数再提醒一次,避免重复轰炸。默认 24 轮(按 1 小时一轮约等于一天)。",
+    "type": "int",
+    "slider": {
+      "min": 1,
+      "max": 720,
+      "step": 1
+    },
+    "default": 24
+  },
+  "fallback_watch_enabled": {
+    "description": "回退感知救火",
+    "hint": "对话请求发生过回退(响应的实际模型与会话当前模型不一致)时,视为当前模型坏的强信号,立即触发一轮救火探测并按规则切换,不必等下一次定时检测。免检测时段内救火不受限。",
+    "type": "bool",
+    "default": true
+  },
+  "fallback_cooldown_minutes": {
+    "description": "救火冷却(分钟)",
+    "hint": "两次救火探测之间的最小间隔,防止连环失败引发探测风暴。默认 5 分钟。",
+    "type": "int",
+    "slider": {
+      "min": 1,
+      "max": 60,
+      "step": 1
+    },
+    "default": 5
+  },
+  "chat_slow_seconds": {
+    "description": "对话慢响应阈值(秒)",
+    "hint": "真实对话回复超过这个秒数,即使没有报错也会触发一轮救火探测。独立于探测合格线——真实对话输入量大、耗时长尾分布大,所以单独设置。默认 30;0 表示关闭。",
+    "type": "int",
+    "slider": {
+      "min": 0,
+      "max": 600,
+      "step": 5
+    },
+    "default": 30
+  },
+  "timer_skip_after_chat_minutes": {
+    "description": "定时检测跳过窗口(分钟)",
+    "hint": "定时检测到点时,若距上次成功对话不足这个分钟数,本轮直接跳过——聊天已验证模型可用,重复检测是浪费。0 表示关闭(每轮必测)。默认 30。",
+    "type": "int",
+    "slider": {
+      "min": 0,
+      "max": 180,
+      "step": 5
+    },
+    "default": 30
+  },
+  "history_max_per_model": {
+    "description": "每个模型保留的检测记录上限",
+    "hint": "用于统计与状态图,超过后自动滚动丢弃最旧记录。",
+    "type": "int",
+    "slider": {
+      "min": 20,
+      "max": 1000,
+      "step": 10
+    },
+    "default": 200
+  },
+  "render_timeout_seconds": {
+    "description": "状态图渲染超时(秒)",
+    "hint": "html_render 生成状态图的最长等待时间,失败时回退为文字摘要。",
+    "type": "int",
+    "slider": {
+      "min": 30,
+      "max": 300,
+      "step": 10
+    },
+    "default": 90
+  }
+}

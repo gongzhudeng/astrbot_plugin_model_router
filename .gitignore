@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 运行时数据
+data/
+logs/
+tmp/
+*.log
+*.db
+*.db-shm
+*.db-wal
+
+# 环境与本地文件
+.env
+.venv/
+.idea/
+.vscode/
+*.bak_*
