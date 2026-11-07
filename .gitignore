@@ -20,3 +20,6 @@ tmp/
 .idea/
 .vscode/
 *.bak_*
+
+# 本地预览
+_preview*.html

@@ -6,7 +6,6 @@ from core.router import (
     REASON_FASTEST_SLOW,
     REASON_OK,
     build_long_unavailable_notice,
-    build_switch_notice,
     current_status_of,
     decide,
     should_switch,
@@ -85,13 +84,6 @@ def test_current_status_of():
 
 
 def test_notices():
-    notice = build_switch_notice(
-        decision=__import__("core.router", fromlist=["Decision"]).Decision(
-            selected_id="b", reason=REASON_OK, selected_latency_ms=1500
-        ),
-        old_id="a", old_status=STATUS_ERROR, old_error="HTTP 502",
-        is_fail_switch=True,
-    )
-    assert "a" in notice and "b" in notice and "502" in notice and "1.5s" in notice
     long_notice = build_long_unavailable_notice("dead_model", 24)
     assert "dead_model" in long_notice and "24" in long_notice
+    assert "日志" not in long_notice  # 纯文案,发送与否由调用方决定

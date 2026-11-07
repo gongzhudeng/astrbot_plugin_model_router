@@ -62,3 +62,11 @@ def test_single_probe_command_exists():
     src = MAIN_SRC.read_text(encoding="utf-8")
     assert "async def _probe_single_by_index(" in src
     assert 'sub_norm in ("测", "检测", "probe", "check")' in src
+
+
+def test_no_chat_notifications():
+    """回归:路由全程对聊天无感——不得调用 send_message,只写日志。"""
+    src = MAIN_SRC.read_text(encoding="utf-8")
+    assert "send_message(" not in src
+    assert "notify_mode" not in src
+    assert "_send_text(" not in src

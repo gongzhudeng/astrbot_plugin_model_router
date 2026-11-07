@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import Any
 
 from astrbot.api import AstrBotConfig, logger
-from astrbot.api.event import AstrMessageEvent, MessageChain, MessageEventResult, filter
+from astrbot.api.event import AstrMessageEvent, MessageEventResult, filter
 from astrbot.api.provider import LLMResponse, ProviderType
 from astrbot.api.star import Context, Star, register
 
@@ -45,8 +45,6 @@ _LOOP_TICK_SECONDS = 30.0
 _REVIVE_CHECK_SECONDS = 86400.0
 # 单轮检测总预算:超时放弃本轮,保证定时循环不被个别挂起的调用拖死
 _ROUND_BUDGET_SECONDS = 240.0
-# 单次消息发送超时,防止平台连接异常时无限等待
-_SEND_TIMEOUT_SECONDS = 30.0
 
 
 @register(
@@ -143,15 +141,6 @@ class ModelRouterPlugin(Star):
         prompt = self._cfg_str("probe_prompt", _DEFAULT_PROBE_PROMPT)
         await target.provider.text_chat(prompt=prompt)
 
-    async def _send_text(self, umo: str, text: str) -> None:
-        try:
-            await asyncio.wait_for(
-                self.context.send_message(umo, MessageChain().message(text)),
-                timeout=_SEND_TIMEOUT_SECONDS,
-            )
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("[模型路由] 发送通知失败: %s", exc)
-
     def _provider_display(self, provider_id: str) -> str | None:
         provider = self.context.get_provider_by_id(provider_id)
         if provider is None:
@@ -234,13 +223,15 @@ class ModelRouterPlugin(Star):
             history_max=self._cfg_int("history_max_per_model", 200),
         )
         notice_threshold = self._cfg_int("fail_notice_consecutive", 24)
-        notices: list[str] = []
         for pid in order_ids:
             after = consecutive_failures(state, pid)
             if after > 0 and should_notice_long_unavailable(
                 before_fails[pid], after, notice_threshold=notice_threshold
             ):
-                notices.append(router_core.build_long_unavailable_notice(pid, after))
+                # 只写日志,不发消息(路由全程对聊天无感)
+                logger.warning(
+                    "[模型路由] %s", router_core.build_long_unavailable_notice(pid, after)
+                )
         await store.save(state)
 
         # 决策 + 切换
@@ -268,28 +259,10 @@ class ModelRouterPlugin(Star):
                     else f"{current_id} 失败({results_by_id[current_id].error}),已切换至 {decision.selected_id}"
                 )
                 logger.info("[模型路由] %s -> %s(%s)", current_id, decision.selected_id, switch_kind)
-                notify_mode = self._cfg_str("notify_mode", "fail_only")
-                if notify_mode != "off" and (switch_kind == "fail" or notify_mode == "all"):
-                    old_result = results_by_id.get(current_id)
-                    await self._send_text(
-                        target_umo,
-                        router_core.build_switch_notice(
-                            decision=decision,
-                            old_id=current_id,
-                            old_status=current_status,
-                            old_error=old_result.error if old_result else "",
-                            is_fail_switch=switch_kind == "fail",
-                        ),
-                    )
             except Exception as exc:  # noqa: BLE001
                 logger.error("[模型路由] 切换失败: %s\n%s", exc, traceback.format_exc())
         else:
             switch_text = f"保持 {current_id}" if current_id else "未切换"
-
-        # 长期不可用提醒
-        if target_umo and notices:
-            for text in notices:
-                await self._send_text(target_umo, text)
 
         # 组装状态图上下文
         name_map = {pid: (self._provider_display(pid) or pid) for pid in order_ids}

@@ -1,4 +1,7 @@
-"""切换决策与通知文案:纯逻辑,不碰 AstrBot API。"""
+"""切换决策与日志文案:纯逻辑,不碰 AstrBot API。
+
+注意:本插件对聊天全程无感——切换与长期不可用只写日志,不发送任何聊天消息。
+"""
 
 from __future__ import annotations
 
@@ -10,12 +13,6 @@ from .prober import STATUS_ERROR, STATUS_OK, STATUS_SLOW, ProbeResult
 REASON_OK = "ok"                    # 有合格模型,按优先级取最靠前者
 REASON_FASTEST_SLOW = "fastest_slow"  # 全超线,取成功返回里延迟最低者
 REASON_ALL_FAILED = "all_failed"    # 全失败,本轮不动
-
-REASON_LABELS = {
-    REASON_OK: "合格",
-    REASON_FASTEST_SLOW: "全超线取最快",
-    REASON_ALL_FAILED: "全部失败",
-}
 
 
 @dataclass(slots=True)
@@ -75,40 +72,12 @@ def should_switch(
     return current_status == STATUS_ERROR
 
 
-def build_switch_notice(
-    *,
-    decision: Decision,
-    old_id: str | None,
-    old_status: str | None,
-    old_error: str,
-    is_fail_switch: bool,
-) -> str:
-    """构建切换通知文案(简短,一行)。"""
-    if is_fail_switch:
-        detail = old_error or "无响应"
-        return (
-            f"⚠️ 模型路由:当前模型 {old_id or '未知'} 探测失败({detail}),"
-            f"已切换至 {decision.selected_id}"
-            f"({_latency_text(decision.selected_latency_ms)},{REASON_LABELS[decision.reason]})。"
-        )
-    old_text = old_id or "默认"
-    return (
-        f"🔁 模型路由:已从 {old_text} 切换至 {decision.selected_id}"
-        f"({_latency_text(decision.selected_latency_ms)})。"
-    )
-
-
 def build_long_unavailable_notice(provider_id: str, consecutive: int) -> str:
+    """长期不可用的日志文案(仅写日志,不发送)。"""
     return (
-        f"🪦 模型路由:{provider_id} 已连续 {consecutive} 轮检测失败,"
+        f"模型 {provider_id} 已连续 {consecutive} 轮检测失败,"
         "建议检查该中转站或把它移出优先级链。"
     )
-
-
-def _latency_text(latency_ms: int) -> str:
-    if latency_ms <= 0:
-        return "延迟未知"
-    return f"{latency_ms / 1000:.1f}s"
 
 
 def current_status_of(

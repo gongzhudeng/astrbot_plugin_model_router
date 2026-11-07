@@ -95,17 +95,6 @@
     "type": "bool",
     "default": true
   },
-  "notify_mode": {
-    "description": "切换通知模式",
-    "hint": "off=全部静默只写日志;fail_only=仅在当前模型失败/报错而切换时通知;all=任何切换都通知。发送到被管理的会话。",
-    "type": "string",
-    "options": [
-      "off",
-      "fail_only",
-      "all"
-    ],
-    "default": "fail_only"
-  },
   "auto_skip_consecutive": {
     "description": "连续失败自动跳过(轮)",
     "hint": "某模型连续失败达到该轮数后,日常检测自动跳过它(不删配置),每 24 小时仍会轻量复测一次以判断是否恢复。0 表示关闭,只提醒不跳过。",
@@ -118,8 +107,8 @@
     "default": 0
   },
   "fail_notice_consecutive": {
-    "description": "长期不可用提醒阈值(轮)",
-    "hint": "某模型连续失败达到该轮数时通知一次,之后每再累积同样轮数再提醒一次,避免重复轰炸。默认 24 轮(按 1 小时一轮约等于一天)。",
+    "description": "长期不可用日志阈值(轮)",
+    "hint": "某模型连续失败达到该轮数时写一条告警日志,之后每再累积同样轮数再记一次,避免刷屏。插件全程不发聊天消息。默认 24 轮(按 1 小时一轮约等于一天)。",
     "type": "int",
     "slider": {
       "min": 1,
