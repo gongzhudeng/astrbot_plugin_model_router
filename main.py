@@ -506,25 +506,51 @@ class ModelRouterPlugin(Star):
         sub: str | int | None = None,
         arg: str | int | None = None,
     ):
-        """查看或驱动模型路由。子命令:测试(默认)/ 状态 / 列表 / 切换 <编号> / 绑定 / 开 / 关"""
-        # AstrBot 会把纯数字参数自动解析成 int,统一转字符串再处理
+        """模型路由:直接发=全链检测;发编号=切换;发"测+编号"=单测。"""
+        # AstrBot 会把纯数字参数自动解析成 int;统一转字符串再处理
         sub_norm = str(sub if sub is not None else "").strip().lower()
+        arg_norm = str(arg if arg is not None else "").strip()
+        # 编号容错:支持 "3" / "测3" / "测 3" / "测试 3" / "切换 3"
+        number = router_core.extract_number(arg_norm) or router_core.extract_number(sub_norm)
 
-        # 纯数字 = 按列表编号直接切换(与 /provider <编号> 同款手感)
+        # 1) 纯数字 = 直接切换(与 /provider <编号> 同款手感)
         if sub_norm.isdigit():
             await self._switch_by_index(event, sub_norm)
+            return
+
+        # 2) 含"测":带编号 = 单测该编号;不带编号的"测试/检测" = 全链
+        if sub_norm.startswith("测") or sub_norm in ("检测", "probe", "check"):
+            if number is not None:
+                await self._probe_single_by_index(event, number)
+                return
+            if sub_norm != "测":
+                await self._run_full_round(event)
+                return
+            event.set_result(
+                MessageEventResult().message(
+                    "用法:/模型路由 测3(也认「测 3」),先用「/模型路由 列表」看编号。"
+                )
+            )
+            return
+
+        # 3) 含"切":带编号就切换
+        if sub_norm.startswith("切") or sub_norm == "switch":
+            if number is None:
+                event.set_result(
+                    MessageEventResult().message(
+                        "用法:/模型路由 3(也认「切换 3」),先用「/模型路由 列表」看编号。"
+                    )
+                )
+                return
+            await self._switch_by_index(event, number)
             return
 
         if sub_norm in ("列表", "list", "models"):
             await self._send_model_list(event)
             return
 
-        if sub_norm in ("测", "检测", "probe", "check"):
-            await self._probe_single_by_index(event, arg)
-            return
-
-        if sub_norm in ("切换", "switch"):
-            await self._switch_by_index(event, arg)
+        if sub_norm in ("状态", "status", "看"):
+            await self._render_status_only(event)
             return
 
         if sub_norm in ("绑定", "bind"):
@@ -548,32 +574,53 @@ class ModelRouterPlugin(Star):
             event.set_result(MessageEventResult().message("⛔ 自动路由已关闭(手动命令不受影响)"))
             return
 
-        if sub_norm in ("状态", "status"):
-            await self._render_status_only(event)
-            return
-
-        if sub_norm in ("", "测试", "run", "test"):
-            if not self._order_ids():
-                event.set_result(
-                    MessageEventResult().message("⚠️ 请先在 WebUI 插件配置里设置模型优先级链。")
-                )
-                return
-            round_ctx = await self.run_probe_round(trigger="manual")
-            await self._render_and_send(event, round_ctx)
+        if sub_norm in ("", "测试", "run", "test", "全测"):
+            await self._run_full_round(event)
             return
 
         event.set_result(
             MessageEventResult().message(
-                "用法:/模型路由 [测试|状态|列表|测 <编号>|<编号>|绑定|开|关]\n"
-                "· 测试(默认):立即检测一轮并自动切换,回状态图\n"
-                "· 状态:只看最近数据出的状态图,不发请求\n"
-                "· 列表:只列出优先级链里的候选模型(带编号)\n"
-                "· 测 <编号>:单独检测某个候选,不切换(如 /模型路由 测 3)\n"
-                "· <编号>:直接按编号切换当前对话模型(如 /模型路由 2)\n"
-                "· 绑定:把当前会话设为被管理的会话\n"
-                "· 开/关:启停自动检测与自动切换"
+                "常用:\n"
+                "· /模型路由          → 全链检测 + 自动切换 + 状态图\n"
+                "· /模型列表          → 候选列表图\n"
+                "· /模型测试 3        → 只测第 3 号\n"
+                "· /模型切换 3        → 切到第 3 号(也认 /模型路由 3)\n"
+                "· /模型状态          → 只看状态图,不检测\n"
+                "· /模型路由 绑定 / 开 / 关"
             )
         )
+
+    @filter.command("模型测试", alias={"模型测", "model_test"})
+    async def model_test_cmd(self, event: AstrMessageEvent, arg: str | int | None = None) -> None:
+        """单独检测指定编号的候选模型(不切换)。"""
+        number = router_core.extract_number(arg)
+        if number is None:
+            event.set_result(
+                MessageEventResult().message("用法:/模型测试 3,先用 /模型列表 看编号。")
+            )
+            return
+        await self._probe_single_by_index(event, number)
+
+    @filter.command("模型列表", alias={"model_list"})
+    async def model_list_cmd(self, event: AstrMessageEvent) -> None:
+        """候选列表图。"""
+        await self._send_model_list(event)
+
+    @filter.command("模型状态", alias={"model_status"})
+    async def model_status_cmd(self, event: AstrMessageEvent) -> None:
+        """状态图(不发起检测)。"""
+        await self._render_status_only(event)
+
+    @filter.command("模型切换", alias={"model_switch"})
+    async def model_switch_cmd(self, event: AstrMessageEvent, arg: str | int | None = None) -> None:
+        """按编号切换当前对话模型。"""
+        number = router_core.extract_number(arg)
+        if number is None:
+            event.set_result(
+                MessageEventResult().message("用法:/模型切换 3,先用 /模型列表 看编号。")
+            )
+            return
+        await self._switch_by_index(event, number)
 
     async def _send_model_list(self, event: AstrMessageEvent) -> None:
         """候选列表图:只列优先级链里的模型,带编号、当前标记与上次探测结果。"""
@@ -760,6 +807,16 @@ class ModelRouterPlugin(Star):
         logger.info("[模型路由] 手动切换 -> %s (第 %d 号)", provider_id, index)
         display = self._provider_display(provider_id) or provider_id
         event.set_result(MessageEventResult().message(f"✅ 已切换到 {display}"))
+
+    async def _run_full_round(self, event: AstrMessageEvent) -> None:
+        """全链检测一轮并回状态图(手动触发)。"""
+        if not self._order_ids():
+            event.set_result(
+                MessageEventResult().message("⚠️ 请先在 WebUI 插件配置里设置模型优先级链。")
+            )
+            return
+        round_ctx = await self.run_probe_round(trigger="manual")
+        await self._render_and_send(event, round_ctx)
 
     async def _render_status_only(self, event: AstrMessageEvent) -> None:
         order_ids = self._order_ids()

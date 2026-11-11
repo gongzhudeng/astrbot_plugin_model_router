@@ -61,7 +61,23 @@ def test_single_probe_command_exists():
     """回归:/模型路由 测 <编号> 单独检测必须存在,且不参与切换决策。"""
     src = MAIN_SRC.read_text(encoding="utf-8")
     assert "async def _probe_single_by_index(" in src
-    assert 'sub_norm in ("测", "检测", "probe", "check")' in src
+    assert 'sub_norm.startswith("测")' in src
+    assert "_probe_single_by_index(event, number)" in src
+
+
+def test_loose_number_parsing():
+    """回归:"测试 3" 这类自然写法必须被识别为单测,而不是整链检测。"""
+    src = MAIN_SRC.read_text(encoding="utf-8")
+    assert "router_core.extract_number(" in src
+    assert "if number is not None:" in src
+    assert "async def _run_full_round(" in src
+
+
+def test_standalone_commands_exist():
+    """回归:独立命令必须存在(/模型测试 3、/模型列表、/模型状态、/模型切换 3)。"""
+    src = MAIN_SRC.read_text(encoding="utf-8")
+    for name in ("模型测试", "模型列表", "模型状态", "模型切换"):
+        assert f'@filter.command("{name}"' in src
 
 
 def test_no_chat_notifications():

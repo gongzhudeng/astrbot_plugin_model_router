@@ -8,6 +8,7 @@ from core.router import (
     build_long_unavailable_notice,
     current_status_of,
     decide,
+    extract_number,
     should_switch,
 )
 
@@ -87,3 +88,17 @@ def test_notices():
     long_notice = build_long_unavailable_notice("dead_model", 24)
     assert "dead_model" in long_notice and "24" in long_notice
     assert "日志" not in long_notice  # 纯文案,发送与否由调用方决定
+
+
+def test_extract_number():
+    """命令参数容错:各种自然写法都能取出编号。"""
+    assert extract_number("3") == 3
+    assert extract_number(3) == 3
+    assert extract_number("测3") == 3
+    assert extract_number("测试 3") == 3
+    assert extract_number("切换 3") == 3
+    assert extract_number("第3个") == 3
+    assert extract_number("测试") is None
+    assert extract_number("状态") is None
+    assert extract_number(None) is None
+    assert extract_number("") is None

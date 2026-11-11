@@ -15,6 +15,12 @@ REASON_FASTEST_SLOW = "fastest_slow"  # 全超线,取成功返回里延迟最低
 REASON_ALL_FAILED = "all_failed"    # 全失败,本轮不动
 
 
+def extract_number(text: str | int | None) -> int | None:
+    """从命令参数里提取整数:支持 "3"、"测3"、"测试 3"、"第3个";无数字返回 None。"""
+    digits = "".join(ch for ch in str(text if text is not None else "") if ch.isdigit())
+    return int(digits) if digits else None
+
+
 @dataclass(slots=True)
 class Decision:
     """一轮探测后的路由决策。"""
