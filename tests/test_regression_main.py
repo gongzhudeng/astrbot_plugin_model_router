@@ -80,6 +80,16 @@ def test_standalone_commands_exist():
         assert f'@filter.command("{name}"' in src
 
 
+def test_commands_stop_event():
+    """回归:命令命中必须 event.stop_event()。
+
+    历史事故(11-12):命令执行后事件继续传播到 LLM,命令文本被当聊天消息处理,
+    卡在会话锁后半小才回复,角色还看到"模型路由"当成怪话。
+    """
+    src = MAIN_SRC.read_text(encoding="utf-8")
+    assert src.count("event.stop_event()") >= 5
+
+
 def test_no_chat_notifications():
     """回归:路由全程对聊天无感——不得调用 send_message,只写日志。"""
     src = MAIN_SRC.read_text(encoding="utf-8")

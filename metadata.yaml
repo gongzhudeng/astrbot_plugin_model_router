@@ -2,7 +2,7 @@ name: astrbot_plugin_model_router
 display_name: 模型路由
 short_desc: 按优先级接力探活，自动切换当前会话模型
 desc: 对话模型自动路由：按优先级链接力探查模型可用性，自动切换当前会话模型（全程静默只写日志）；支持免检测时段、候选列表与状态图数据沉淀。
-version: 1.1.1
+version: 1.1.2
 author: Mando
 repo: https://github.com/gongzhudeng/astrbot_plugin_model_router
 astrbot_version: ">=4.16.0"

@@ -507,6 +507,8 @@ class ModelRouterPlugin(Star):
         arg: str | int | None = None,
     ):
         """模型路由:直接发=全链检测;发编号=切换;发"测+编号"=单测。"""
+        # 命令命中即停止事件传播:否则同一事件会继续走到 LLM,命令文本被当聊天消息
+        event.stop_event()
         # AstrBot 会把纯数字参数自动解析成 int;统一转字符串再处理
         sub_norm = str(sub if sub is not None else "").strip().lower()
         arg_norm = str(arg if arg is not None else "").strip()
@@ -593,6 +595,7 @@ class ModelRouterPlugin(Star):
     @filter.command("模型测试", alias={"模型测", "model_test"})
     async def model_test_cmd(self, event: AstrMessageEvent, arg: str | int | None = None) -> None:
         """单独检测指定编号的候选模型(不切换)。"""
+        event.stop_event()
         number = router_core.extract_number(arg)
         if number is None:
             event.set_result(
@@ -604,16 +607,19 @@ class ModelRouterPlugin(Star):
     @filter.command("模型列表", alias={"model_list"})
     async def model_list_cmd(self, event: AstrMessageEvent) -> None:
         """候选列表图。"""
+        event.stop_event()
         await self._send_model_list(event)
 
     @filter.command("模型状态", alias={"model_status"})
     async def model_status_cmd(self, event: AstrMessageEvent) -> None:
         """状态图(不发起检测)。"""
+        event.stop_event()
         await self._render_status_only(event)
 
     @filter.command("模型切换", alias={"model_switch"})
     async def model_switch_cmd(self, event: AstrMessageEvent, arg: str | int | None = None) -> None:
         """按编号切换当前对话模型。"""
+        event.stop_event()
         number = router_core.extract_number(arg)
         if number is None:
             event.set_result(
