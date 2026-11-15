@@ -43,6 +43,28 @@
     },
     "default": 50
   },
+  "probe_repeats": {
+    "description": "单模型探测次数",
+    "hint": "同一模型连续探测 N 次、每次都合格才算可用;任一次失败立即判不合格(不浪费后续请求)。1=关闭。启用后本轮延迟会显示为多次总和,放弃线不足时会自动提升到 合格线×次数+5 秒。",
+    "type": "int",
+    "slider": {
+      "min": 1,
+      "max": 5,
+      "step": 1
+    },
+    "default": 1
+  },
+  "recent_success_threshold": {
+    "description": "历史成功率门槛(%)",
+    "hint": "软门槛:最近 5 次探测成功率低于该值的模型,只有在没有其他合格模型时才会被使用(不影响冷启动模型)。0=关闭。默认 0。",
+    "type": "int",
+    "slider": {
+      "min": 0,
+      "max": 100,
+      "step": 5
+    },
+    "default": 0
+  },
   "probe_prompt": {
     "description": "探测提示词",
     "hint": "发给每个模型的用户消息,越短越省 token。",

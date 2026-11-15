@@ -30,19 +30,45 @@ class Decision:
     selected_latency_ms: int = 0
 
 
-def decide(results: Sequence[ProbeResult], order_ids: Sequence[str]) -> Decision:
+def decide(
+    results: Sequence[ProbeResult],
+    order_ids: Sequence[str],
+    *,
+    success_rates: Mapping[str, float | None] | None = None,
+    min_rate: float = 0.0,
+) -> Decision:
     """按定案规则选择模型。
 
     1. 合格的按优先级:order_ids 顺序里第一个 ok。
     2. 全都不合格:在成功返回(超线)里挑延迟最低的,不看出身。
     3. 全都失败:不选择。
+
+    历史成功率软门槛(min_rate > 0 且提供 success_rates 时生效):
+    - 优先只在"最近成功率达标"的合格模型里挑;
+    - 若一个都不达标,回退到全部合格模型(不因历史误伤当前可用的模型)。
     """
     results_by_id = {r.provider_id: r for r in results}
 
-    for pid in order_ids:
-        result = results_by_id.get(pid)
-        if result is not None and result.status == STATUS_OK:
-            return Decision(selected_id=pid, reason=REASON_OK, selected_latency_ms=result.latency_ms)
+    ok_ids = [
+        pid
+        for pid in order_ids
+        if (result := results_by_id.get(pid)) is not None and result.status == STATUS_OK
+    ]
+    if ok_ids and min_rate > 0 and success_rates:
+        qualified = [
+            pid
+            for pid in ok_ids
+            if success_rates.get(pid) is None or success_rates[pid] >= min_rate
+        ]
+        if qualified:
+            ok_ids = qualified
+    if ok_ids:
+        result = results_by_id[ok_ids[0]]
+        return Decision(
+            selected_id=ok_ids[0],
+            reason=REASON_OK,
+            selected_latency_ms=result.latency_ms,
+        )
 
     slow_results = [r for r in results if r.status == STATUS_SLOW]
     if slow_results:

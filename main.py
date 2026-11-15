@@ -34,6 +34,7 @@ from .core.prober import (
 )
 from .core.storage import (
     StateStore,
+    aggregate,
     consecutive_failures,
     record_round,
     should_auto_skip,
@@ -137,9 +138,26 @@ class ModelRouterPlugin(Star):
         return [str(x).strip() for x in self._cfg_list("provider_priority") if str(x).strip()]
 
     async def _probe_fn(self, target: ProbeTarget) -> None:
-        """单次探测:成功正常返回,失败抛异常;超时由 relay_probe 统一控制。"""
+        """探测(可按 probe_repeats 连续多次):每次都要在合格线内成功,任一次失败即抛异常。
+
+        repeats=1 时保持原语义(超合格线仍算成功,由 relay 判 slow);
+        repeats>1 时采用严格模式:任何一次超过合格线都视为不合格。
+        """
         prompt = self._cfg_str("probe_prompt", _DEFAULT_PROBE_PROMPT)
-        await target.provider.text_chat(prompt=prompt)
+        repeats = max(1, self._cfg_int("probe_repeats", 1))
+        if repeats <= 1:
+            await target.provider.text_chat(prompt=prompt)
+            return
+        eligible = max(0.1, self._cfg_float("eligible_timeout_seconds", 30.0))
+        for attempt in range(1, repeats + 1):
+            started = time.perf_counter()
+            await target.provider.text_chat(prompt=prompt)
+            elapsed = time.perf_counter() - started
+            if elapsed > eligible:
+                raise RuntimeError(
+                    f"第 {attempt}/{repeats} 次探测超过合格线 {eligible:g}s"
+                    f"({elapsed:.1f}s)"
+                )
 
     def _provider_display(self, provider_id: str) -> str | None:
         provider = self.context.get_provider_by_id(provider_id)
@@ -206,11 +224,25 @@ class ModelRouterPlugin(Star):
             targets.append(ProbeTarget(provider_id=pid, provider=provider))
 
         # 探测
+        eligible = self._cfg_float("eligible_timeout_seconds", 30.0)
+        deadline = self._cfg_float("probe_deadline_seconds", 50.0)
+        repeats = max(1, self._cfg_int("probe_repeats", 1))
+        if repeats > 1:
+            required = eligible * repeats + 5.0
+            if required > deadline:
+                logger.warning(
+                    "[模型路由] 探测 %d 次需要放弃线至少 %.0f 秒,已自动从 %.0f 秒提升"
+                    "(否则会被误判为失败)",
+                    repeats,
+                    required,
+                    deadline,
+                )
+                deadline = required
         probed = await relay_probe(
             targets,
             self._probe_fn,
-            eligible_timeout=self._cfg_float("eligible_timeout_seconds", 30.0),
-            probe_deadline=self._cfg_float("probe_deadline_seconds", 50.0),
+            eligible_timeout=eligible,
+            probe_deadline=deadline,
         )
         for result in probed:
             results_by_id[result.provider_id] = result
@@ -234,8 +266,36 @@ class ModelRouterPlugin(Star):
                 )
         await store.save(state)
 
-        # 决策 + 切换
-        decision = router_core.decide(all_results, order_ids)
+        # 决策 + 切换(历史成功率软门槛:默认关闭)
+        min_rate = self._cfg_int("recent_success_threshold", 0) / 100.0
+        success_rates: dict[str, float | None] | None = None
+        if min_rate > 0:
+            history = state.get("history", {})
+            success_rates = {}
+            for pid in order_ids:
+                stats = aggregate(
+                    history.get(pid, []),
+                    now=now_ts,
+                    window_seconds=7 * 86400.0,
+                    recent_n=5,
+                )
+                measured = [
+                    r
+                    for r in stats.recent
+                    if r.get("status") in (STATUS_OK, STATUS_SLOW, STATUS_ERROR)
+                ]
+                if not measured:
+                    success_rates[pid] = None  # 冷启动视为达标
+                else:
+                    success_rates[pid] = sum(
+                        1 for r in measured if r["status"] in (STATUS_OK, STATUS_SLOW)
+                    ) / len(measured)
+        decision = router_core.decide(
+            all_results,
+            order_ids,
+            success_rates=success_rates,
+            min_rate=min_rate,
+        )
         current_id = await self._current_provider_id()
         current_status = router_core.current_status_of(all_results, current_id)
 

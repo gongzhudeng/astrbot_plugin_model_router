@@ -102,3 +102,32 @@ def test_extract_number():
     assert extract_number("状态") is None
     assert extract_number(None) is None
     assert extract_number("") is None
+
+
+def test_decide_history_gate_prefers_qualified():
+    """软门槛:历史不达标的合格模型,在有达标者时被跳过。"""
+    results = [_r("a", STATUS_OK, 100), _r("b", STATUS_OK, 200)]
+    d = decide(results, ["a", "b"], success_rates={"a": 0.2, "b": 0.8}, min_rate=0.6)
+    assert d.selected_id == "b"
+    assert d.reason == REASON_OK
+
+
+def test_decide_history_gate_falls_back_when_none_qualified():
+    """全部历史不达标 → 回退全部候选,仍按优先级(不误伤当前可用模型)。"""
+    results = [_r("a", STATUS_OK, 100), _r("b", STATUS_OK, 200)]
+    d = decide(results, ["a", "b"], success_rates={"a": 0.2, "b": 0.3}, min_rate=0.6)
+    assert d.selected_id == "a"
+
+
+def test_decide_history_gate_cold_start_qualified():
+    """无历史(None)视为达标,不会被门槛误伤。"""
+    results = [_r("a", STATUS_OK, 100), _r("b", STATUS_OK, 200)]
+    d = decide(results, ["a", "b"], success_rates={"a": None, "b": 0.9}, min_rate=0.6)
+    assert d.selected_id == "a"
+
+
+def test_decide_history_gate_disabled_by_default():
+    """min_rate=0(默认)行为不变,不看历史。"""
+    results = [_r("a", STATUS_OK, 100), _r("b", STATUS_OK, 200)]
+    d = decide(results, ["a", "b"], success_rates={"a": 0.1, "b": 1.0}, min_rate=0.0)
+    assert d.selected_id == "a"

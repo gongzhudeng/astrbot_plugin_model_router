@@ -90,6 +90,14 @@ def test_commands_stop_event():
     assert src.count("event.stop_event()") >= 5
 
 
+def test_probe_repeats_and_history_gate_wired():
+    """回归:重复探测与历史成功率软门槛的配置必须接线。"""
+    src = MAIN_SRC.read_text(encoding="utf-8")
+    assert 'self._cfg_int("probe_repeats", 1)' in src
+    assert 'self._cfg_int("recent_success_threshold", 0)' in src
+    assert "success_rates=success_rates" in src
+
+
 def test_no_chat_notifications():
     """回归:路由全程对聊天无感——不得调用 send_message,只写日志。"""
     src = MAIN_SRC.read_text(encoding="utf-8")
